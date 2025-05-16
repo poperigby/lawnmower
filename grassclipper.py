@@ -6,11 +6,25 @@
 # 
 # code is repurposed from lawnmower so might contain references and nuts.
 
-import json
 import io
-import sys
+import json
 import os
-import os.path
+import shutil
+import sys
+
+def find_executable(name):
+    # Check in PATH
+    path_exec = shutil.which(name)
+    if path_exec:
+        return path_exec
+
+    # Check in current directory (explicitly)
+    local_exec = os.path.join(os.getcwd(), name)
+    if os.path.isfile(local_exec) and os.access(local_exec, os.X_OK):
+        return local_exec
+
+    print(f"FATAL: Cannot find the {name}. Make sure it's in the current directory or your PATH.")
+    sys.exit()
 
 # okay let's go, grab the commandline arguments and stuff them in variables
 try:
@@ -27,10 +41,12 @@ if not os.path.isfile(grassinputfile1) or not os.path.isfile(grassinputfile2):
 
 print("Grassclipper by acidzebra")
 
+tes3conv = find_executable("tes3conv")
+
 # take input grass file 1, convert to json, and clean up
 try:
     print("converting grass file 1 to JSON...")
-    target = "tes3conv.exe \""+str(grassinputfile1)+"\" tempgrass1.json"
+    target = f"{tes3conv} {grassinputfile1} tempgrass1.json"
     os.system(target)
     print("reading grass file 1 JSON...")
     f = io.open("tempgrass1.json", mode="r", encoding="utf-8")
@@ -46,7 +62,7 @@ except Exception as e:
 # take input grass file 2, convert to json, and clean up
 try:
     print("converting grass file 2 to JSON...")
-    target = "tes3conv.exe \""+str(grassinputfile2)+"\" tempgrass2.json"
+    target = f"{tes3conv} {grassinputfile2} tempgrass2.json"
     os.system(target)
     print("reading grass file 2 JSON...")
     f = io.open("tempgrass2.json", mode="r", encoding="utf-8")
@@ -110,7 +126,7 @@ try:
     with open('export.json', 'w', encoding='utf-8') as f:
         json.dump(exportfile, f, ensure_ascii=False, indent=4)
     print("converting final json file to "+str(lwnmwroutputfile))
-    target = "tes3conv.exe export.json \""+str(lwnmwroutputfile)+"\""
+    target = f"{tes3conv} export.json {lwnmwroutputfile}"
     os.system(target)
     f.close()
     os.remove("export.json")

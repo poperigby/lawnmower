@@ -15,11 +15,37 @@ deletemodjson = False
 ### END OF USER-CONFIGURABLE STUFF
 # I mean you could change stuff below too if you wanted and you're welcome to do so
 
-import json
 import io
-import sys
+import json
 import os
-import gc
+import shutil
+import sys
+
+
+def find_executable(name):
+    # Check in PATH
+    path_exec = shutil.which(name)
+    if path_exec:
+        return path_exec
+
+    # Check in current directory (explicitly)
+    local_exec = os.path.join(os.getcwd(), name)
+    if os.path.isfile(local_exec) and os.access(local_exec, os.X_OK):
+        return local_exec
+
+    print(f"FATAL: Cannot find the {name}. Make sure it's in the current directory or your PATH.")
+    sys.exit()
+
+def find_lawnmower():
+    for name in ["lawnmower.py", "lawnmower"]:
+        if os.path.isfile(name):
+            return name
+        path = shutil.which(name)
+        if path:
+            return path
+
+    print("FATAL: Cannot find 'lawnmower.py' or 'lawnmower' in PATH or current directory.")
+    sys.exit(1)
 
 grassmodlist = []
 modlist = []
@@ -38,14 +64,6 @@ except:
 
 if not os.path.isdir(target_folder):
     print("FATAL: target directory \"",target_folder,"\"does not exist.")
-    sys.exit()
-
-if not os.path.isfile("tes3conv.exe"):
-    print("FATAL: cannot find path to tes3conv.exe, is it in the same folder as this script?")
-    sys.exit()
-    
-if not os.path.isfile("lawnmower.py"):
-    print("FATAL: cannot find path to lawnmower.py, is it in the same folder as this script?")
     sys.exit()
     
     
@@ -70,7 +88,7 @@ for files in esplist:
             os.remove(jsonfilename)
         if not os.path.isfile(str(jsonfilename)):
             try:
-                target = "tes3conv.exe \""+str(files)+"\" \""+str(jsonfilename)+"\""
+                target = f"{find_executable("tes3conv")} {files} {jsonfilename}"
                 print("running",target)
                 os.system(target)
             except Exception as e:
@@ -134,7 +152,7 @@ if gogogo == 0:
 
 for mods in modlist:
     for grassmods in grassmodlist:
-        target = "lawnmower.py \""+str(mods)+"\" \""+str(grassmods)+"\" \""+str(grassmods)+"\""
+        target = f"{find_lawnmower()} {mods} {grassmods} {grassmods}"
         print("executing",target)
         os.system(target)
     

@@ -51,11 +51,26 @@ debugmove = False
 ### END OF USER-CONFIGURABLE STUFF
 # I mean you could change stuff below too if you wanted and you're welcome to do so
 
-import json
-import io
-import sys
-import os
 import gc
+import io
+import json
+import os
+import shutil
+import sys
+
+def find_executable(name):
+    # Check in PATH
+    path_exec = shutil.which(name)
+    if path_exec:
+        return path_exec
+
+    # Check in current directory (explicitly)
+    local_exec = os.path.join(os.getcwd(), name)
+    if os.path.isfile(local_exec) and os.access(local_exec, os.X_OK):
+        return local_exec
+
+    print(f"FATAL: Cannot find the {name}. Make sure it's in the current directory or your PATH.")
+    sys.exit()
 
 def is_clipping(circle_x, circle_y, rad, x, y):
     if ((x - circle_x) * (x - circle_x) + (y - circle_y) * (y - circle_y) <= rad * rad):
@@ -84,21 +99,19 @@ if not os.path.isfile(modinputfile) or not os.path.isfile(grassinputfile):
     print("FATAL: mod or grass input file does not exist, cannot continue")
     sys.exit()
 
-if not os.path.isfile("tes3conv.exe"):
-    print("FATAL: cannot find path to tes3conv.exe, is it in the same folder as this script?")
-    sys.exit()
-
 if moreinfo:
     print("Lawnmower for Morrowind",str(version),"by acidzebra: grass go brrrr")
 
 jsonmodname = modinputfile[:-4]+".json"
+tes3conv = find_executable("tes3conv")
+
 if deletemodjson and os.path.isfile(str(jsonmodname)):
     os.remove(jsonmodname)
 if not os.path.isfile(str(jsonmodname)):
     if moreinfo:
         print("converting mod file to JSON...")
     try:
-        target = "tes3conv.exe \""+str(modinputfile)+"\" \""+str(jsonmodname)+"\""
+        target = f"{tes3conv} modinputfile jsonmodname"
         os.system(target)
     except Exception as e:
         print("FATAL: unable to convert mod to json: "+repr(e)) 
@@ -117,7 +130,7 @@ if deletemodjson:
 if moreinfo:
     print("converting grass file to JSON...")
 try:
-    target = "tes3conv.exe \""+str(grassinputfile)+"\" tempgrass.json"
+    target = f"{tes3conv} {grassinputfile} tempgrass.json"
     os.system(target)
 except Exception as e:
     print("FATAL: unable to convert grassfile to json: "+repr(e))
@@ -233,9 +246,9 @@ if changesmade:
         if moreinfo:
             print("converting final json file to "+str(lwnmwroutputfile))
         if overwrite:
-            target = "tes3conv.exe -o export.json \""+str(lwnmwroutputfile)+"\""
+            target = f"{tes3conv} -o export.json {lwnmwroutputfile}"
         else:
-            target = "tes3conv.exe export.json \""+str(lwnmwroutputfile)+"\""
+            target = f"{tes3conv} export.json {lwnmwroutputfile}"
         os.system(target)
         f.close()
         os.remove("export.json")
